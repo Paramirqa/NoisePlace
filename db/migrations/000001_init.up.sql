@@ -1,0 +1,1 @@
+-- Initial baseline migration; domain tables will be added in the catalog stage.
