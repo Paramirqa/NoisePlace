@@ -1,4 +1,4 @@
-.PHONY: test vet fmt sqlc migrate-up migrate-down
+.PHONY: test vet fmt rebuild sqlc migrate-up migrate-down
 
 test:
 	go test ./...
@@ -8,6 +8,10 @@ vet:
 
 fmt:
 	gofmt -w $$(find . -name '*.go' -not -path './vendor/*')
+
+rebuild:
+	docker compose build --no-cache
+	docker compose up -d --force-recreate
 
 sqlc:
 	sqlc generate

@@ -1,63 +1,157 @@
-# Music Platform Backend
+NoisePlace — Backend
 
-Initial Go monolith scaffold for a music discovery and collections platform.
+Backend музыкальной платформы для поиска музыки, ведения личной библиотеки и создания пользовательских подборок. Основная бизнес-логика реализуется на Go.
 
-## Requirements
+Стек
 
-- Go 1.25+
-- Docker Desktop with Docker Compose
-- Optional for local generation: `sqlc` and `golang-migrate`
+* Go 1.25+ — backend и бизнес-логика.
+* PostgreSQL 17 — основная база данных.
+* pgx/v5 — подключение к PostgreSQL.
+* sqlc — генерация Go-кода из SQL-запросов.
+* chi — HTTP-маршрутизация.
+* golang-migrate — миграции базы данных.
+* Docker Compose — запуск сервисов в контейнерах.
 
-## Local setup
+Требования
 
-1. Copy `.env.example` to `.env`.
-2. Replace `POSTGRES_PASSWORD` with a long random local password.
-3. Start the stack:
+* Go 1.25+
+* Docker Desktop с Docker Compose.
+* sqlc — для локальной генерации кода.
+* golang-migrate — если требуется запускать миграции вне Docker Compose.
 
-   ```sh
-   docker compose up --build
-   ```
+Локальный запуск
 
-4. Check endpoints:
+1. Подготовка окружения
 
-   ```sh
-   curl -i http://localhost:8080/healthz
-   curl -i http://localhost:8080/readyz
-   ```
+Создай .env на основе .env.example:
 
-The first endpoint checks that the HTTP process responds. The second checks PostgreSQL connectivity.
+cp .env.example .env
 
-Stop the stack with `Ctrl+C`. To remove the local database volume as well:
+При необходимости измени POSTGRES_PASSWORD в .env.
 
-```sh
+2. Сборка и запуск
+
+Собери образы и запусти сервисы:
+
+docker compose up --build
+
+3. Проверка работы
+
+Проверка HTTP-сервиса:
+
+curl -i http://localhost:8080/healthz
+
+Проверка подключения к PostgreSQL:
+
+curl -i http://localhost:8080/readyz
+
+Ожидаемый ответ для /healthz:
+
+{
+  "status": "ok"
+}
+
+/healthz проверяет, что HTTP-сервис отвечает. /readyz дополнительно проверяет доступность PostgreSQL.
+
+Управление контейнерами
+
+Остановить сервисы, не удаляя контейнеры:
+
+docker compose stop
+
+Повторно запустить остановленные сервисы:
+
+docker compose start
+
+Остановить и удалить контейнеры и сеть Compose:
+
+docker compose down
+
+Пересобрать образы и запустить сервисы после изменения кода:
+
+docker compose up --build -d
+
+Эта команда пересобирает образы, если это необходимо, и запускает сервисы в фоновом режиме. База данных не удаляется.
+
+Чтобы остановить фоновые сервисы:
+
+docker compose down
+
+Внимание: следующая команда удаляет также тома Compose, включая том PostgreSQL, и приводит к потере локальных данных базы:
+
 docker compose down -v
-```
 
-**Warning:** `docker compose down -v` permanently deletes the local PostgreSQL data volume.
+Проверки Go
 
-## Go checks
+Из корня проекта:
 
-```sh
-go mod tidy
 go test ./...
 go vet ./...
 go build ./cmd/server
-```
 
-## Migrations
+При изменении зависимостей синхронизируй go.mod и go.sum:
 
-Migrations are applied by the `migrate` service before the app starts. The first migration intentionally creates no lasting domain tables; domain schema will be added in the next verified stage.
+go mod tidy
 
-## sqlc
+Миграции базы данных
 
-After adding SQL queries, generate code with:
+Миграции хранятся в каталоге db/migrations.
 
-```sh
+При запуске через Docker Compose миграции применяются сервисом migrate перед запуском приложения.
+
+SQL и sqlc
+
+SQL-запросы находятся в:
+
+db/queries/
+
+Сгенерированный Go-код находится в:
+
+internal/database/sqlc/
+
+После изменения SQL-запросов или конфигурации sqlc выполни генерацию:
+
 sqlc generate
-```
 
-Generated code is intentionally not committed yet because there are no application queries.
+После генерации рекомендуется проверить проект:
 
-## Current scope
+go test ./...
+go vet ./...
 
-This scaffold includes configuration, a PostgreSQL connection pool, HTTP health endpoints, migration runner, Docker Compose, and basic CI. Catalog, authentication, library, collections, editorial content, and admin features will be added in separate stages.
+Текущая реализация
+
+* HTTP endpoint GET /healthz для проверки работы приложения.
+* HTTP endpoint GET /readyz для проверки подключения к PostgreSQL.
+* API исполнителей /api/v1/artists:
+    * создание исполнителя;
+    * получение исполнителя по ID;
+    * поиск исполнителей;
+    * обновление информации об исполнителе.
+* Таблицы каталога:
+    * artists;
+    * releases;
+    * release_artists.
+* Таблицы внешних идентификаторов исполнителей и релизов.
+* Миграции PostgreSQL.
+* SQL-запросы и сгенерированный код sqlc.
+* Базовые автоматические проверки проекта.
+
+Планируемые возможности
+
+* HTTP API каталога релизов.
+* Авторизация и пользовательские профили.
+* Личная музыкальная библиотека.
+* Оценки и заметки об исполнителях и релизах.
+* Пользовательские подборки с возможностью менять порядок элементов.
+* Публичные и приватные подборки.
+* Сохранение чужих подборок.
+* Редакционные статьи и рецензии.
+* Административная панель для управления каталогом и контентом.
+
+Функциональность будет добавляться поэтапно.
+
+Документация
+
+- [HTTP API](docs/api.md)
+- [Структура базы данных](docs/database.md)
+- [Руководство разработчика](docs/development.md)
