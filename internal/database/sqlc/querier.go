@@ -14,6 +14,7 @@ type Querier interface {
 	AddReleaseExternalID(ctx context.Context, arg AddReleaseExternalIDParams) (ReleaseExternalID, error)
 	CreateArtist(ctx context.Context, arg CreateArtistParams) (Artist, error)
 	CreateRelease(ctx context.Context, arg CreateReleaseParams) (Release, error)
+	DeleteRelease(ctx context.Context, id int64) (int64, error)
 	GetArtist(ctx context.Context, id int64) (Artist, error)
 	GetArtistByExternalID(ctx context.Context, arg GetArtistByExternalIDParams) (Artist, error)
 	GetRelease(ctx context.Context, id int64) (Release, error)

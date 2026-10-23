@@ -24,6 +24,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 
 	h.registerHealthRoutes(r)
 	h.registerArtistRoutes(r)
+	h.registerReleaseRoutes(r)
 
 	return r
 }

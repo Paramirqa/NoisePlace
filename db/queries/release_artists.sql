@@ -41,5 +41,4 @@ OFFSET sqlc.arg(page_offset)::INTEGER;
 -- name: RemoveReleaseArtist :execrows
 DELETE FROM release_artists
 WHERE release_id = sqlc.arg(release_id)
-  AND artist_id = sqlc.arg(artist_id)
-  AND role = sqlc.arg(role);
+  AND artist_id = sqlc.arg(artist_id);
