@@ -26,6 +26,7 @@ type Querier interface {
 	SearchReleases(ctx context.Context, arg SearchReleasesParams) ([]Release, error)
 	UpdateArtist(ctx context.Context, arg UpdateArtistParams) (Artist, error)
 	UpdateRelease(ctx context.Context, arg UpdateReleaseParams) (Release, error)
+	UpdateReleaseArtist(ctx context.Context, arg UpdateReleaseArtistParams) (int64, error)
 }
 
 var _ Querier = (*Queries)(nil)

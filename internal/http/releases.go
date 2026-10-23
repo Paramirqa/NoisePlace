@@ -65,6 +65,7 @@ func (h *Handler) registerReleaseRoutes(r chi.Router) {
 	// Release artists
 	r.Get("/api/v1/releases/{id}/artists", h.listReleaseArtists)
 	r.Post("/api/v1/releases/{id}/artists", h.addReleaseArtist)
+	r.Put("/api/v1/releases/{id}/artists/{artist_id}", h.updateReleaseArtist)
 	r.Delete("/api/v1/releases/{id}/artists/{artist_id}", h.removeReleaseArtist)
 }
 
@@ -680,6 +681,148 @@ func (h *Handler) addReleaseArtist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, artists)
+}
+
+// PUT /api/v1/releases/{id}/artists/{artist_id}
+func (h *Handler) updateReleaseArtist(w http.ResponseWriter, r *http.Request) {
+	releaseID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil || releaseID <= 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid release id",
+		})
+		return
+	}
+
+	artistID, err := strconv.ParseInt(chi.URLParam(r, "artist_id"), 10, 64)
+	if err != nil || artistID <= 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid artist id",
+		})
+		return
+	}
+
+	var req releaseArtistInput
+
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid request body",
+		})
+		return
+	}
+
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "request body must contain a single JSON object",
+		})
+		return
+	}
+
+	if req.Role == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "role is required",
+		})
+		return
+	}
+
+	if !validArtistRoles[req.Role] {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid artist role",
+		})
+		return
+	}
+
+	if req.Position == nil || *req.Position < 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "position must be a non-negative integer",
+		})
+		return
+	}
+
+	// Проверяем существование релиза.
+	_, err = h.queries.GetRelease(r.Context(), releaseID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": "release not found",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to get release",
+		})
+		return
+	}
+
+	// Проверяем существование исполнителя.
+	_, err = h.queries.GetArtist(r.Context(), artistID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": "artist not found",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to get artist",
+		})
+		return
+	}
+
+	// Обновляем связь исполнителя с релизом.
+	rowsAffected, err := h.queries.UpdateReleaseArtist(
+		r.Context(),
+		sqldb.UpdateReleaseArtistParams{
+			Role:      req.Role,
+			Position:  *req.Position,
+			ReleaseID: releaseID,
+			ArtistID:  artistID,
+		},
+	)
+	if err != nil {
+		var pgErr *pgconn.PgError
+
+		if errors.As(err, &pgErr) {
+			switch pgErr.Code {
+			case "23514":
+				writeJSON(w, http.StatusBadRequest, map[string]string{
+					"error": "invalid release artist data",
+				})
+				return
+			}
+		}
+
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to update release artist",
+		})
+		return
+	}
+
+	if rowsAffected == 0 {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error": "artist is not linked to this release",
+		})
+		return
+	}
+
+	// Возвращаем актуальный список исполнителей релиза.
+	artists, err := h.queries.GetReleaseArtists(r.Context(), releaseID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "artist updated, but failed to load release artists",
+		})
+		return
+	}
+
+	if artists == nil {
+		artists = []sqldb.GetReleaseArtistsRow{}
+	}
+
+	writeJSON(w, http.StatusOK, artists)
 }
 
 // DELETE /api/v1/releases/{id}/artists/{artist_id}
