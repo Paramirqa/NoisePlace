@@ -41,3 +41,8 @@ cover_url = sqlc.narg(cover_url),
 updated_at = NOW()
 WHERE id = sqlc.arg(id)
 RETURNING *;
+
+
+-- name: DeleteRelease :execrows
+DELETE FROM releases
+WHERE id = sqlc.arg(id);

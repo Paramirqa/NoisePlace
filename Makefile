@@ -15,9 +15,9 @@ rebuild:
 
 sqlc:
 	sqlc generate
-
+	
 migrate-up:
-	migrate -path db/migrations -database "$$DATABASE_URL" up
+	docker compose run --rm migrate up
 
 migrate-down:
-	migrate -path db/migrations -database "$$DATABASE_URL" down 1
+	docker compose run --rm migrate down 1

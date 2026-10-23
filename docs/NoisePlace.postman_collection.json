@@ -1,0 +1,277 @@
+{
+  "info": {
+    "name": "NoisePlace API",
+    "description": "Postman collection for the currently confirmed NoisePlace release and release-artist endpoints. Set baseUrl, releaseId, and artistId in collection variables before running requests. Creating a release requires an existing artist ID.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Releases",
+      "item": [
+        {
+          "name": "Create release",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"NoisePlace Test Release\",\n  \"release_type\": \"album\",\n  \"release_date\": \"2026-10-23\",\n  \"description\": \"Test release\",\n  \"artists\": [\n    {\n      \"artist_id\": {{artistId}},\n      \"role\": \"primary\",\n      \"position\": 0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "releases"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search releases",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases?query={{searchQuery}}&limit=20&offset=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "releases"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "{{searchQuery}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get release by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "releases",
+                "{{releaseId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update release",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated NoisePlace Test Release\",\n  \"release_type\": \"album\",\n  \"release_date\": \"2026-10-23\",\n  \"description\": \"Updated test release\",\n  \"cover_url\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "releases",
+                "{{releaseId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete release",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases/{{releaseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "releases",
+                "{{releaseId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Release artists",
+      "item": [
+        {
+          "name": "List artists for release",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases/{{releaseId}}/artists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "releases",
+                "{{releaseId}}",
+                "artists"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add artist to release",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"artist_id\": {{artistId}},\n  \"role\": \"featured\",\n  \"position\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases/{{releaseId}}/artists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "releases",
+                "{{releaseId}}",
+                "artists"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update artist role and position",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"featured\",\n  \"position\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases/{{releaseId}}/artists/{{artistId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "releases",
+                "{{releaseId}}",
+                "artists",
+                "{{artistId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove artist from release",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases/{{releaseId}}/artists/{{artistId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "releases",
+                "{{releaseId}}",
+                "artists",
+                "{{artistId}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "releaseId",
+      "value": "1"
+    },
+    {
+      "key": "artistId",
+      "value": "1"
+    },
+    {
+      "key": "searchQuery",
+      "value": "test"
+    }
+  ]
+}

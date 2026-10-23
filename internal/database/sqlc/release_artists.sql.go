@@ -143,17 +143,44 @@ const removeReleaseArtist = `-- name: RemoveReleaseArtist :execrows
 DELETE FROM release_artists
 WHERE release_id = $1
   AND artist_id = $2
-  AND role = $3
 `
 
 type RemoveReleaseArtistParams struct {
-	ReleaseID int64  `json:"release_id"`
-	ArtistID  int64  `json:"artist_id"`
-	Role      string `json:"role"`
+	ReleaseID int64 `json:"release_id"`
+	ArtistID  int64 `json:"artist_id"`
 }
 
 func (q *Queries) RemoveReleaseArtist(ctx context.Context, arg RemoveReleaseArtistParams) (int64, error) {
-	result, err := q.db.Exec(ctx, removeReleaseArtist, arg.ReleaseID, arg.ArtistID, arg.Role)
+	result, err := q.db.Exec(ctx, removeReleaseArtist, arg.ReleaseID, arg.ArtistID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const updateReleaseArtist = `-- name: UpdateReleaseArtist :execrows
+UPDATE release_artists
+SET
+    role = $1,
+    position = $2
+WHERE release_id = $3
+  AND artist_id = $4
+`
+
+type UpdateReleaseArtistParams struct {
+	Role      string `json:"role"`
+	Position  int32  `json:"position"`
+	ReleaseID int64  `json:"release_id"`
+	ArtistID  int64  `json:"artist_id"`
+}
+
+func (q *Queries) UpdateReleaseArtist(ctx context.Context, arg UpdateReleaseArtistParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateReleaseArtist,
+		arg.Role,
+		arg.Position,
+		arg.ReleaseID,
+		arg.ArtistID,
+	)
 	if err != nil {
 		return 0, err
 	}
