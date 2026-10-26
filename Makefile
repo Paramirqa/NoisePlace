@@ -17,7 +17,7 @@ sqlc:
 	sqlc generate
 	
 migrate-up:
-	docker compose run --rm migrate up
+	docker compose run --rm migrate 
 
 migrate-down:
 	docker compose run --rm migrate down 1
