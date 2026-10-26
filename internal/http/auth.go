@@ -23,9 +23,8 @@ var (
 )
 
 func (h *Handler) registerAuthRoutes(r chi.Router) {
-
 	r.Post("/api/v1/auth/register", h.registerUser)
-
+	r.Post("/api/v1/auth/login", h.loginUser)
 }
 
 func (h *Handler) registerUser(w http.ResponseWriter, r *http.Request) {
@@ -36,45 +35,35 @@ func (h *Handler) registerUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
-
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
-
 	if err := decoder.Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "invalid JSON request body",
 		})
 		return
 	}
-
 	var extra any
-
 	if err := decoder.Decode(&extra); err != io.EOF {
-
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "request body must contain a single JSON object",
 		})
 		return
-
 	}
-
 	username := strings.TrimSpace(req.Username)
 	email := strings.ToLower(strings.TrimSpace(req.Email))
-
 	if !usernamePattern.MatchString(username) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "username must contain 3-32 letters, digits or underscores",
 		})
 		return
 	}
-
 	if len(email) > 254 || !emailPattern.MatchString(email) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "invalid email",
 		})
 		return
 	}
-
 	if !utf8.ValidString(req.Password) ||
 		len(req.Password) < 12 ||
 		len(req.Password) > 128 {
@@ -83,7 +72,6 @@ func (h *Handler) registerUser(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
 	passwordHash, err := auth.HashPassword(req.Password)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
@@ -91,7 +79,6 @@ func (h *Handler) registerUser(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
 	user, err := h.queries.CreateUser(r.Context(), sqldb.CreateUserParams{
 		Username:     username,
 		Email:        email,
@@ -105,14 +92,81 @@ func (h *Handler) registerUser(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "failed to register user",
 		})
 		return
 	}
-
 	writeJSON(w, http.StatusCreated, user)
+
 }
 
-var _ = pgx.ErrNoRows
+func (h *Handler) loginUser(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid JSON request body",
+		})
+		return
+	}
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "request body must contain a single JSON object",
+		})
+		return
+	}
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	if len(email) > 254 || !emailPattern.MatchString(email) || req.Password == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "email and password are required",
+		})
+		return
+	}
+	user, err := h.queries.GetUserByEmail(r.Context(), email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{
+				"error": "invalid email or password",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to authenticate user",
+		})
+		return
+	}
+	passwordMatches, err := auth.VerifyPassword(req.Password, user.PasswordHash)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to verify credentials",
+		})
+		return
+	}
+	if !passwordMatches {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "invalid email or password",
+		})
+		return
+	}
+	accessToken, err := auth.GenerateAccessToken(user.ID, h.jwtSecret)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to create access token",
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"access_token": accessToken,
+		"token_type":   "Bearer",
+		"expires_in":   int(auth.AccessTokenTTL.Seconds()),
+	})
+
+}

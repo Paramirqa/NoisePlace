@@ -10,14 +10,16 @@ import (
 )
 
 type Handler struct {
-	db      *pgxpool.Pool
-	queries *sqldb.Queries
+	db        *pgxpool.Pool
+	queries   *sqldb.Queries
+	jwtSecret string
 }
 
-func NewRouter(db *pgxpool.Pool) http.Handler {
+func NewRouter(db *pgxpool.Pool, jwtSecret string) http.Handler {
 	h := &Handler{
-		db:      db,
-		queries: sqldb.New(db),
+		db:        db,
+		queries:   sqldb.New(db),
+		jwtSecret: jwtSecret,
 	}
 
 	r := chi.NewRouter()

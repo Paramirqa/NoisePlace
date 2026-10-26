@@ -2,6 +2,7 @@ package auth
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
 	"strconv"
@@ -110,10 +111,5 @@ func VerifyPassword(password, encodedHash string) (bool, error) {
 		return false, nil
 	}
 
-	var diff byte
-	for i := range actualHash {
-		diff |= actualHash[i] ^ expectedHash[i]
-	}
-
-	return diff == 0, nil
+	return subtle.ConstantTimeCompare(actualHash, expectedHash) == 1, nil
 }

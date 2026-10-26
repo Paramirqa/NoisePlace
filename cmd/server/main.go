@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"music-platform/internal/config"
-	apphttp "music-platform/internal/http"
 	"music-platform/internal/database"
+	apphttp "music-platform/internal/http"
 )
 
 func main() {
@@ -31,12 +31,11 @@ func main() {
 	defer db.Close()
 
 	server := &http.Server{
-		Addr:              cfg.HTTPAddr,
-		Handler:           apphttp.NewRouter(db),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		Addr:    cfg.HTTPAddr,
+		Handler: apphttp.NewRouter(db, cfg.JWTSecret), ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
 	errCh := make(chan error, 1)
