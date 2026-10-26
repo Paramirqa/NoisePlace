@@ -23,6 +23,7 @@ func NewRouter(db *pgxpool.Pool) http.Handler {
 	r := chi.NewRouter()
 
 	h.registerHealthRoutes(r)
+	h.registerAuthRoutes(r)
 	h.registerArtistRoutes(r)
 	h.registerReleaseRoutes(r)
 
