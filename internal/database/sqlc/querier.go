@@ -10,8 +10,10 @@ import (
 
 type Querier interface {
 	AddArtistExternalID(ctx context.Context, arg AddArtistExternalIDParams) (ArtistExternalID, error)
+	AddArtistToLibrary(ctx context.Context, arg AddArtistToLibraryParams) error
 	AddReleaseArtist(ctx context.Context, arg AddReleaseArtistParams) error
 	AddReleaseExternalID(ctx context.Context, arg AddReleaseExternalIDParams) (ReleaseExternalID, error)
+	AddReleaseToLibrary(ctx context.Context, arg AddReleaseToLibraryParams) error
 	CreateArtist(ctx context.Context, arg CreateArtistParams) (Artist, error)
 	CreateRelease(ctx context.Context, arg CreateReleaseParams) (Release, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
@@ -25,7 +27,11 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	ListArtistReleases(ctx context.Context, arg ListArtistReleasesParams) ([]Release, error)
+	ListLibraryArtists(ctx context.Context, userID int64) ([]ListLibraryArtistsRow, error)
+	ListLibraryReleases(ctx context.Context, userID int64) ([]ListLibraryReleasesRow, error)
+	RemoveArtistFromLibrary(ctx context.Context, arg RemoveArtistFromLibraryParams) (int64, error)
 	RemoveReleaseArtist(ctx context.Context, arg RemoveReleaseArtistParams) (int64, error)
+	RemoveReleaseFromLibrary(ctx context.Context, arg RemoveReleaseFromLibraryParams) (int64, error)
 	SearchArtists(ctx context.Context, arg SearchArtistsParams) ([]Artist, error)
 	SearchReleases(ctx context.Context, arg SearchReleasesParams) ([]Release, error)
 	UpdateArtist(ctx context.Context, arg UpdateArtistParams) (Artist, error)

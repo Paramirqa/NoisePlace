@@ -27,6 +27,7 @@ func NewRouter(db *pgxpool.Pool, jwtSecret string) http.Handler {
 	h.registerHealthRoutes(r)
 	h.registerAuthRoutes(r)
 	h.registerUserRoutes(r)
+	h.registerLibraryRoutes(r)
 	h.registerArtistRoutes(r)
 	h.registerReleaseRoutes(r)
 
