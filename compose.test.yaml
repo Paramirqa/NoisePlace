@@ -1,0 +1,30 @@
+services:
+  postgres-test:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: noiseplace_test
+      POSTGRES_USER: music_test
+      POSTGRES_PASSWORD: noiseplace_test_only
+    ports:
+      - "127.0.0.1:5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U music_test -d noiseplace_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  migrate-test:
+    image: migrate/migrate:v4.18.3
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    volumes:
+      - ./db/migrations:/migrations:ro
+    command:
+      - "-path=/migrations"
+      - "-database"
+      - "postgres://music_test:noiseplace_test_only@postgres-test:5432/noiseplace_test?sslmode=disable"
+      - "up"
+    restart: "no"
