@@ -14,6 +14,7 @@ func TestLoadRequiresDatabaseURL(t *testing.T) {
 func TestLoadDefaultsHTTPAddr(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://music:pass@localhost:5432/music_platform?sslmode=disable")
 	t.Setenv("HTTP_ADDR", "")
+	t.Setenv("JWT_SECRET", "test-secret-that-is-at-least-32-characters")
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
