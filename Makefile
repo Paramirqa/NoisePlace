@@ -30,3 +30,6 @@ migrate-up:
 
 migrate-down:
 	docker compose run --rm migrate down 1
+
+migrate-status:
+	docker compose exec postgres psql -U music -d music_platform -c "SELECT version, dirty FROM schema_migrations;"

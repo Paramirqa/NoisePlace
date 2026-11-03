@@ -62,6 +62,14 @@ type User struct {
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
+type UserArtistRating struct {
+	UserID    int64              `json:"user_id"`
+	ArtistID  int64              `json:"artist_id"`
+	Rating    int16              `json:"rating"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type UserLibraryArtist struct {
 	UserID   int64              `json:"user_id"`
 	ArtistID int64              `json:"artist_id"`
@@ -72,4 +80,12 @@ type UserLibraryRelease struct {
 	UserID    int64              `json:"user_id"`
 	ReleaseID int64              `json:"release_id"`
 	AddedAt   pgtype.Timestamptz `json:"added_at"`
+}
+
+type UserReleaseRating struct {
+	UserID    int64              `json:"user_id"`
+	ReleaseID int64              `json:"release_id"`
+	Rating    int16              `json:"rating"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }

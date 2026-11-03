@@ -210,6 +210,38 @@ make test-integration
 
 Перед запуском проверь реализацию этой цели: она должна использовать тестовую конфигурацию и тестовую базу данных, а не рабочую базу разработки.
 
+## Тестовые пользователи
+
+### Основной пользователь библиотеки
+
+- Username: `librarytester`
+- Email: `librarytester@example.com`
+- Password: `StrongPassword123!`
+
+Используется для ручного тестирования API: авторизация, личная библиотека, оценки и другие пользовательские функции.
+
+### Дополнительный пользователь оценки
+- Username: `ratings_tester`
+- Email: `ratings_tester@example.com`
+- Password: `StrongPassword456!`
+
+### Авторизация
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "email": "librarytester@example.com",
+    "password": "StrongPassword123!"
+  }'
+```
+
+Токен действует 15 минут. Для тестирования защищённых эндпоинтов используй:
+
+```bash
+-H "Authorization: Bearer $TOKEN"
+```
+
 ## 8. Проверка HTTP API
 
 Проверить доступность приложения:
