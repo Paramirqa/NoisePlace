@@ -38,10 +38,7 @@ func NewRouter(db *pgxpool.Pool, jwtSecret string) http.Handler {
 
 	h.registerRatingRoutes(r)
 
-	h.registerLibraryRoutes(r)
-
 	h.registerNotesRoutes(r)
 
-	h.registerArtistRoutes(r)
 	return r
 }
