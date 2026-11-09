@@ -15,18 +15,26 @@ type Querier interface {
 	AddReleaseExternalID(ctx context.Context, arg AddReleaseExternalIDParams) (ReleaseExternalID, error)
 	AddReleaseToLibrary(ctx context.Context, arg AddReleaseToLibraryParams) error
 	CreateArtist(ctx context.Context, arg CreateArtistParams) (Artist, error)
+	// Artist notes
+	CreateArtistNote(ctx context.Context, arg CreateArtistNoteParams) error
 	CreateRelease(ctx context.Context, arg CreateReleaseParams) (Release, error)
+	// Release notes
+	CreateReleaseNote(ctx context.Context, arg CreateReleaseNoteParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
+	DeleteArtistNote(ctx context.Context, arg DeleteArtistNoteParams) (int64, error)
 	DeleteArtistRating(ctx context.Context, arg DeleteArtistRatingParams) (int64, error)
 	DeleteRelease(ctx context.Context, id int64) (int64, error)
+	DeleteReleaseNote(ctx context.Context, arg DeleteReleaseNoteParams) (int64, error)
 	DeleteReleaseRating(ctx context.Context, arg DeleteReleaseRatingParams) (int64, error)
 	GetArtist(ctx context.Context, id int64) (Artist, error)
 	GetArtistByExternalID(ctx context.Context, arg GetArtistByExternalIDParams) (Artist, error)
+	GetArtistNote(ctx context.Context, arg GetArtistNoteParams) (UserArtistNote, error)
 	GetArtistRating(ctx context.Context, arg GetArtistRatingParams) (UserArtistRating, error)
 	GetArtistRatingStats(ctx context.Context, artistID int64) (GetArtistRatingStatsRow, error)
 	GetRelease(ctx context.Context, id int64) (Release, error)
 	GetReleaseArtists(ctx context.Context, releaseID int64) ([]GetReleaseArtistsRow, error)
 	GetReleaseByExternalID(ctx context.Context, arg GetReleaseByExternalIDParams) (Release, error)
+	GetReleaseNote(ctx context.Context, arg GetReleaseNoteParams) (UserReleaseNote, error)
 	GetReleaseRating(ctx context.Context, arg GetReleaseRatingParams) (UserReleaseRating, error)
 	GetReleaseRatingStats(ctx context.Context, releaseID int64) (GetReleaseRatingStatsRow, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
@@ -41,8 +49,10 @@ type Querier interface {
 	SearchArtists(ctx context.Context, arg SearchArtistsParams) ([]Artist, error)
 	SearchReleases(ctx context.Context, arg SearchReleasesParams) ([]Release, error)
 	UpdateArtist(ctx context.Context, arg UpdateArtistParams) (Artist, error)
+	UpdateArtistNote(ctx context.Context, arg UpdateArtistNoteParams) (int64, error)
 	UpdateRelease(ctx context.Context, arg UpdateReleaseParams) (Release, error)
 	UpdateReleaseArtist(ctx context.Context, arg UpdateReleaseArtistParams) (int64, error)
+	UpdateReleaseNote(ctx context.Context, arg UpdateReleaseNoteParams) (int64, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error)
 	UpsertArtistRating(ctx context.Context, arg UpsertArtistRatingParams) (UserArtistRating, error)
 	UpsertReleaseRating(ctx context.Context, arg UpsertReleaseRatingParams) (UserReleaseRating, error)

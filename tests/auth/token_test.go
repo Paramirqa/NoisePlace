@@ -135,7 +135,7 @@ func TestGenerateAccessTokenRejectsWrongSecret(t *testing.T) {
 }
 
 func TestAccessTokenTTL(t *testing.T) {
-	if auth.AccessTokenTTL != 15*time.Minute {
-		t.Errorf("unexpected AccessTokenTTL: got %v, want %v", auth.AccessTokenTTL, 15*time.Minute)
+	if auth.AccessTokenTTL != 24 * time.Hour {
+		t.Errorf("unexpected AccessTokenTTL: got %v, want %v", auth.AccessTokenTTL, 24 * time.Hour)
 	}
 }
