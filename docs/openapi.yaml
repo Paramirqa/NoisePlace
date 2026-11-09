@@ -145,30 +145,47 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/v1/users/me:
+    /api/v1/artists:
     get:
-      tags: [Users]
-      summary: Get current user
-      operationId: getCurrentUser
+      tags: [Artists]
+      summary: Search artists
+      operationId: searchArtists
+      security: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
       responses:
         "200":
-          description: Current user
+          description: Matching artists
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
+                type: array
+                items:
+                  $ref: "#/components/schemas/Artist"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /api/v1/artists:
     post:
       tags: [Artists]
       summary: Create an artist
@@ -195,7 +212,7 @@ paths:
   /api/v1/artists/{id}:
     parameters:
       - $ref: "#/components/parameters/PathID"
-    get:
+    get:/api/v1/artists:
       tags: [Artists]
       summary: Get an artist
       operationId: getArtist
@@ -269,48 +286,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-  /api/v1/artists:
-    get:
-      tags: [Artists]
-      summary: Search artists
-      operationId: searchArtists
-      security: []
-      parameters:
-        - name: query
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Search query
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-      responses:
-        "200":
-          description: Matching artists
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Artist"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
