@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const AccessTokenTTL = 15 * time.Minute
+const AccessTokenTTL = 24 * time.Hour
 
 type AccessTokenClaims struct {
 	jwt.RegisteredClaims
