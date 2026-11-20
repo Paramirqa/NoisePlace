@@ -84,11 +84,19 @@ INSERT INTO playlist_releases (
     position
 )
 SELECT
-    sqlc.arg(playlist_id),
+    p.id,
     sqlc.arg(release_id),
-    COALESCE(MAX(position), -1) + 1
-FROM playlist_releases
-WHERE playlist_id = sqlc.arg(playlist_id)
+    COALESCE(
+        (
+            SELECT MAX(pr.position)
+            FROM playlist_releases pr
+            WHERE pr.playlist_id = p.id
+        ),
+        -1
+    ) + 1
+FROM playlists p
+WHERE p.id = sqlc.arg(playlist_id)
+  AND p.user_id = sqlc.arg(user_id)
 RETURNING
     playlist_id,
     release_id,
