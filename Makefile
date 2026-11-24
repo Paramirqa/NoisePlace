@@ -1,4 +1,4 @@
-.PHONY: test test-integration vet fmt rebuild sqlc migrate-up migrate-down
+.PHONY: test test-integration vet fmt rebuild sqlc migrate-up migrate-down auth
 test:
 	go test ./...
 
@@ -19,7 +19,7 @@ fmt:
 	gofmt -w $$(find . -name '*.go' -not -path './vendor/*')
 
 rebuild:
-	docker compose build --no-cache
+	docker compose build
 	docker compose up -d --force-recreate
 
 sqlc:
@@ -33,3 +33,19 @@ migrate-down:
 
 migrate-status:
 	docker compose exec postgres psql -U music -d music_platform -c "SELECT version, dirty FROM schema_migrations;"
+
+auth:
+	@set -e; \
+	printf "Email: "; read EMAIL; \
+	printf "Password: "; stty -echo; read PASSWORD; stty echo; echo; \
+	RESPONSE=$$(curl -sS -X POST http://localhost:8080/api/v1/auth/login \
+		-H "Content-Type: application/json" \
+		-d "{\"email\":\"$$EMAIL\",\"password\":\"$$PASSWORD\"}"); \
+	TOKEN=$$(echo "$$RESPONSE" | jq -er '.access_token') || { \
+		echo "Authentication failed:"; \
+		echo "$$RESPONSE" | jq .; \
+		exit 1; \
+	}; \
+	printf "%s" "$$TOKEN" > .token; \
+	chmod 600 .token; \
+	echo "Authentication successful. Token saved to .token"

@@ -96,8 +96,15 @@ const filteredReleases = computed(() => {
 })
 
 function toggleSaved(id: number) {
+  if (!auth.isAuthenticated) {
+    router.push('/login')
+    return
+  }
+
   if (savedAlbums.value.includes(id)) {
-    savedAlbums.value = savedAlbums.value.filter((item) => item !== id)
+    savedAlbums.value = savedAlbums.value.filter(
+        (item) => item !== id
+    )
   } else {
     savedAlbums.value.push(id)
   }
@@ -140,7 +147,7 @@ function goTo(path: string) {
         </button>
       </div>
 
-      <div class="nav-group">
+      <div v-if="auth.isAuthenticated" class="nav-group">
         <div class="nav-label">ТВОЁ ПРОСТРАНСТВО</div>
 
         <button class="nav-item" @click="goTo('/collection')">
@@ -150,7 +157,7 @@ function goTo(path: string) {
 
         <button class="nav-item" @click="goTo('/playlists')">
           <span class="nav-icon">☷</span>
-          Подборки
+          Мои подборки
         </button>
 
         <button class="nav-item" @click="goTo('/favorites')">
@@ -169,7 +176,9 @@ function goTo(path: string) {
 
         <button
             class="profile-button"
-            @click="auth.isAuthenticated ? goTo('/profile') : goTo('/login')"
+            @click="auth.isAuthenticated
+              ? goTo('/profile')
+              : goTo('/login')"
         >
           <div class="avatar">
             {{ auth.user?.username?.charAt(0).toUpperCase() || 'U' }}
@@ -177,12 +186,15 @@ function goTo(path: string) {
 
           <div class="profile-info">
             <strong>
-              {{ auth.user?.username || 'Мой профиль' }}
+              {{ auth.user?.username || 'Гость' }}
             </strong>
+
             <span>
-      {{ auth.isAuthenticated ? 'Слушатель' : 'Войти в аккаунт' }}
-    </span>
-          </div>
+              {{ auth.isAuthenticated
+                        ? 'Мой аккаунт'
+                        : 'Войти или зарегистрироваться' }}
+            </span>
+                  </div>
 
           <span class="profile-arrow">↗</span>
         </button>

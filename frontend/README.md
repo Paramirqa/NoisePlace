@@ -1,42 +1,161 @@
-# .
+# NoisePlace — Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+## Технологический стек
 
-## Recommended IDE Setup
+- **Vue 3** — JavaScript-фреймворк для создания пользовательского интерфейса.
+- **TypeScript** — типизация и повышение надёжности кода.
+- **Vite** — инструмент сборки и локальной разработки.
+- **Vue Router** — маршрутизация между страницами.
+- **Pinia** — управление глобальным состоянием приложения.
+- **CSS** — стилизация и адаптивная вёрстка.
+- **npm** — управление зависимостями проекта.
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## Требования
 
-## Recommended Browser Setup
+Перед началом работы необходимо установить:
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+- Node.js (рекомендуется LTS-версия).
+- npm.
+- Git.
 
-## Type Support for `.vue` Imports in TS
+Проверить установленные версии можно командами:
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+```bash
+node -v
+npm -v
+```
 
-## Customize configuration
+## Установка и запуск
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+### 1. Клонирование репозитория
 
-## Project Setup
+```bash
+git clone https://github.com/Paramirqa/NoisePlace.git
+```
 
-```sh
+### 2. Переход в директорию Frontend
+
+```bash
+cd NoisePlace/frontend
+```
+
+Если frontend уже открыт в вашей IDE, перейдите непосредственно в его корневую директорию.
+
+### 3. Установка зависимостей
+
+```bash
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### 4. Запуск проекта в режиме разработки
 
-```sh
+```bash
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+После успешного запуска приложение будет доступно по адресу:
 
-```sh
+http://localhost:5173/
+
+### 5. Сборка проекта
+
+Для создания production-сборки выполните:
+
+```bash
 npm run build
 ```
+
+Результат сборки будет находиться в директории `dist`.
+
+Для локального просмотра production-сборки:
+
+```bash
+npm run preview
+```
+
+## Структура проекта
+
+Основная структура frontend-приложения:
+
+```text
+frontend/
+├── public/                 # Статические файлы
+├── src/
+│   ├── assets/             # Изображения, иконки и ресурсы
+│   ├── components/         # Переиспользуемые компоненты
+│   ├── views/              # Страницы приложения
+│   ├── router/             # Настройки маршрутизации
+│   ├── stores/             # Хранилища Pinia
+│   ├── services/           # Работа с API
+│   ├── types/              # TypeScript-типы и интерфейсы
+│   ├── styles/             # Глобальные стили
+│   ├── App.vue             # Корневой компонент
+│   └── main.ts             # Точка входа приложения
+├── index.html
+├── package.json
+├── package-lock.json
+├── tsconfig.json
+└── vite.config.ts
+```
+
+*Фактический состав директорий может отличаться в зависимости от текущей реализации проекта.*
+
+## Основные возможности Frontend
+
+- Регистрация новых пользователей.
+- Авторизация и выход из аккаунта.
+- Навигация между страницами приложения.
+- Отображение пользовательского интерфейса NoisePlace.
+- Взаимодействие с серверной частью через API.
+- Управление состоянием приложения.
+- Адаптация интерфейса под различные размеры экранов.
+
+## Разработка
+
+При разработке рекомендуется придерживаться следующих принципов:
+
+- Использовать Vue-компоненты для повторно используемых элементов интерфейса.
+- Разделять представление, бизнес-логику и работу с API.
+- Использовать TypeScript для типизации данных.
+- Хранить глобальное состояние в Pinia.
+- Использовать Vue Router для организации навигации.
+- Поддерживать единый стиль оформления кода.
+
+## Работа с Backend
+
+Frontend взаимодействует с Backend посредством HTTP-запросов.
+
+Адрес Backend API рекомендуется задавать через переменные окружения.
+
+Например, файл `.env`:
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+Получить значение переменной в приложении можно следующим образом:
+
+```typescript
+const apiUrl = import.meta.env.VITE_API_URL;
+```
+
+Фактический адрес API зависит от конфигурации серверной части проекта.
+
+## Полезные команды
+
+| Команда | Назначение |
+|---|---|
+| `npm install` | Установка зависимостей |
+| `npm run dev` | Запуск проекта |
+| `npm run build` | Production-сборка |
+| `npm run preview` | Просмотр production-сборки |
+
+## Репозиторий
+
+GitHub: https://github.com/Paramirqa/NoisePlace
+
+---
+
+**NoisePlace — Frontend**
+
+Пользовательская часть платформы NoisePlace.
