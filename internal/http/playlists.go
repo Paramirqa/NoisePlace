@@ -38,6 +38,7 @@ func (h *Handler) registerPlaylistRoutes(r chi.Router) {
 		r.Get("/api/v1/me/playlists/{id}/releases", h.listPlaylistReleases)
 		r.Post("/api/v1/me/playlists/{id}/releases", h.addPlaylistRelease)
 		r.Delete("/api/v1/me/playlists/{id}/releases/{release_id}", h.removePlaylistRelease)
+		r.Patch("/api/v1/me/playlists/{id}/releases/order", h.reorderPlaylistReleases)
 	})
 }
 
@@ -604,4 +605,169 @@ func (h *Handler) removePlaylistRelease(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type reorderPlaylistReleasesRequest struct {
+	ReleaseIDs *[]int64 `json:"release_ids"`
+}
+
+// PATCH /api/v1/me/playlists/{id}/releases/order
+func (h *Handler) reorderPlaylistReleases(w http.ResponseWriter, r *http.Request) {
+	userID, ok := currentUserID(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "authentication required",
+		})
+		return
+	}
+
+	playlistID, ok := parsePlaylistID(w, r)
+	if !ok {
+		return
+	}
+
+	var req reorderPlaylistReleasesRequest
+	if err := decodePlaylistJSON(w, r, &req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid JSON request body",
+		})
+		return
+	}
+
+	if req.ReleaseIDs == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "release_ids must be an array",
+		})
+		return
+	}
+
+	// Проверяем положительные ID и отсутствие дубликатов.
+	seen := make(map[int64]struct{}, len(*req.ReleaseIDs))
+
+	for _, releaseID := range *req.ReleaseIDs {
+		if releaseID <= 0 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "release_ids must contain only positive integers",
+			})
+			return
+		}
+
+		if _, exists := seen[releaseID]; exists {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "release_ids must not contain duplicates",
+			})
+			return
+		}
+
+		seen[releaseID] = struct{}{}
+	}
+
+	if uint64(len(*req.ReleaseIDs)) > uint64(^uint32(0)>>1)+1 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "too many releases",
+		})
+		return
+	}
+
+	ctx := r.Context()
+
+	tx, err := h.db.Begin(ctx)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to begin transaction",
+		})
+		return
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	queries := h.queries.WithTx(tx)
+
+	// Блокируем плейлист, чтобы параллельные изменения состава
+	// не нарушили порядок.
+	_, err = queries.GetPlaylistForUpdate(ctx, sqldb.GetPlaylistForUpdateParams{
+		ID:     playlistID,
+		UserID: userID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": "playlist not found",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to lock playlist",
+		})
+		return
+	}
+
+	currentIDs, err := queries.ListPlaylistReleaseIDs(ctx, playlistID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to list playlist releases",
+		})
+		return
+	}
+
+	// Новый порядок должен содержать все текущие релизы
+	// ровно по одному разу.
+	if len(currentIDs) != len(*req.ReleaseIDs) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "release_ids must contain every release in the playlist exactly once",
+		})
+		return
+	}
+
+	currentSet := make(map[int64]struct{}, len(currentIDs))
+	for _, releaseID := range currentIDs {
+		currentSet[releaseID] = struct{}{}
+	}
+
+	for _, releaseID := range *req.ReleaseIDs {
+		if _, exists := currentSet[releaseID]; !exists {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "release_ids must contain every release in the playlist exactly once",
+			})
+			return
+		}
+	}
+
+	// Применяем новый порядок.
+	for position, releaseID := range *req.ReleaseIDs {
+		rows, err := queries.UpdatePlaylistReleasePosition(
+			ctx,
+			sqldb.UpdatePlaylistReleasePositionParams{
+				PlaylistID: playlistID,
+				ReleaseID:  releaseID,
+				Position:   int32(position),
+			},
+		)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to update playlist release position",
+			})
+			return
+		}
+
+		if rows != 1 {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "unexpected number of updated playlist releases",
+			})
+			return
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to commit transaction",
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"release_ids": *req.ReleaseIDs,
+	})
 }
