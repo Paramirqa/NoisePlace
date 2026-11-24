@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const (
@@ -34,6 +35,9 @@ func (h *Handler) registerPlaylistRoutes(r chi.Router) {
 		r.Get("/api/v1/me/playlists/{id}", h.getPlaylist)
 		r.Patch("/api/v1/me/playlists/{id}", h.updatePlaylist)
 		r.Delete("/api/v1/me/playlists/{id}", h.deletePlaylist)
+		r.Get("/api/v1/me/playlists/{id}/releases", h.listPlaylistReleases)
+		r.Post("/api/v1/me/playlists/{id}/releases", h.addPlaylistRelease)
+		r.Delete("/api/v1/me/playlists/{id}/releases/{release_id}", h.removePlaylistRelease)
 	})
 }
 
@@ -334,6 +338,267 @@ func (h *Handler) deletePlaylist(w http.ResponseWriter, r *http.Request) {
 	if rows == 0 {
 		writeJSON(w, http.StatusNotFound, map[string]string{
 			"error": "playlist not found",
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+type addPlaylistReleaseRequest struct {
+	ReleaseID int64 `json:"release_id"`
+}
+
+// GET /api/v1/me/playlists/{id}/releases
+func (h *Handler) listPlaylistReleases(w http.ResponseWriter, r *http.Request) {
+	userID, ok := currentUserID(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "authentication required",
+		})
+		return
+	}
+
+	playlistID, ok := parsePlaylistID(w, r)
+	if !ok {
+		return
+	}
+
+	// Проверяем существование плейлиста и его владельца.
+	_, err := h.queries.GetUserPlaylist(r.Context(), sqldb.GetUserPlaylistParams{
+		ID:     playlistID,
+		UserID: userID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": "playlist not found",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to get playlist",
+		})
+		return
+	}
+
+	releases, err := h.queries.ListPlaylistReleases(
+		r.Context(),
+		sqldb.ListPlaylistReleasesParams{
+			ID:     playlistID,
+			UserID: userID,
+		},
+	)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to list playlist releases",
+		})
+		return
+	}
+
+	if releases == nil {
+		releases = []sqldb.ListPlaylistReleasesRow{}
+	}
+
+	writeJSON(w, http.StatusOK, releases)
+}
+
+// POST /api/v1/me/playlists/{id}/releases
+func (h *Handler) addPlaylistRelease(w http.ResponseWriter, r *http.Request) {
+	userID, ok := currentUserID(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "authentication required",
+		})
+		return
+	}
+
+	playlistID, ok := parsePlaylistID(w, r)
+	if !ok {
+		return
+	}
+
+	var req addPlaylistReleaseRequest
+	if err := decodePlaylistJSON(w, r, &req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid JSON request body",
+		})
+		return
+	}
+
+	if req.ReleaseID <= 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "release_id must be a positive integer",
+		})
+		return
+	}
+
+	ctx := r.Context()
+
+	tx, err := h.db.Begin(ctx)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to begin transaction",
+		})
+		return
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	queries := h.queries.WithTx(tx)
+
+	// Блокируем плейлист для последовательного изменения состава.
+	_, err = queries.GetPlaylistForUpdate(ctx, sqldb.GetPlaylistForUpdateParams{
+		ID:     playlistID,
+		UserID: userID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": "playlist not found",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to lock playlist",
+		})
+		return
+	}
+
+	// Проверяем существование релиза.
+	_, err = queries.GetRelease(ctx, req.ReleaseID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": "release not found",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to get release",
+		})
+		return
+	}
+
+	playlistRelease, err := queries.AddReleaseToPlaylist(
+		ctx,
+		sqldb.AddReleaseToPlaylistParams{
+			PlaylistID: playlistID,
+			ReleaseID:  req.ReleaseID,
+			UserID:     userID,
+		},
+	)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error": "release is already in playlist",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to add release to playlist",
+		})
+		return
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to commit transaction",
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, playlistRelease)
+}
+
+// DELETE /api/v1/me/playlists/{id}/releases/{release_id}
+func (h *Handler) removePlaylistRelease(w http.ResponseWriter, r *http.Request) {
+	userID, ok := currentUserID(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "authentication required",
+		})
+		return
+	}
+
+	playlistID, ok := parsePlaylistID(w, r)
+	if !ok {
+		return
+	}
+
+	releaseID, err := strconv.ParseInt(chi.URLParam(r, "release_id"), 10, 64)
+	if err != nil || releaseID <= 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid release id",
+		})
+		return
+	}
+
+	ctx := r.Context()
+
+	tx, err := h.db.Begin(ctx)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to begin transaction",
+		})
+		return
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	queries := h.queries.WithTx(tx)
+
+	// Блокируем плейлист перед изменением состава.
+	_, err = queries.GetPlaylistForUpdate(ctx, sqldb.GetPlaylistForUpdateParams{
+		ID:     playlistID,
+		UserID: userID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": "playlist not found",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to lock playlist",
+		})
+		return
+	}
+
+	rows, err := queries.RemoveReleaseFromPlaylist(
+		ctx,
+		sqldb.RemoveReleaseFromPlaylistParams{
+			PlaylistID: playlistID,
+			ReleaseID:  releaseID,
+			UserID:     userID,
+		},
+	)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to remove release from playlist",
+		})
+		return
+	}
+
+	if rows == 0 {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error": "release is not in playlist",
+		})
+		return
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to commit transaction",
 		})
 		return
 	}

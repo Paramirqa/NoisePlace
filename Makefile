@@ -19,7 +19,7 @@ fmt:
 	gofmt -w $$(find . -name '*.go' -not -path './vendor/*')
 
 rebuild:
-	docker compose build --no-cache
+	docker compose build
 	docker compose up -d --force-recreate
 
 sqlc:
