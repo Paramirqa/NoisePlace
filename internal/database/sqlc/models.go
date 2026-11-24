@@ -27,6 +27,23 @@ type ArtistExternalID struct {
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 }
 
+type Playlist struct {
+	ID          int64              `json:"id"`
+	UserID      int64              `json:"user_id"`
+	Title       string             `json:"title"`
+	Description pgtype.Text        `json:"description"`
+	IsPublic    bool               `json:"is_public"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type PlaylistRelease struct {
+	PlaylistID int64              `json:"playlist_id"`
+	ReleaseID  int64              `json:"release_id"`
+	Position   int32              `json:"position"`
+	AddedAt    pgtype.Timestamptz `json:"added_at"`
+}
+
 type Release struct {
 	ID          int64              `json:"id"`
 	Title       string             `json:"title"`

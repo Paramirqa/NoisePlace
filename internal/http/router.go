@@ -40,5 +40,7 @@ func NewRouter(db *pgxpool.Pool, jwtSecret string) http.Handler {
 
 	h.registerNotesRoutes(r)
 
+	h.registerPlaylistRoutes(r)
+
 	return r
 }
